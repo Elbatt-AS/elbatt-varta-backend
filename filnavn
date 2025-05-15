@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>Søk Varta Batteri - Elbatt</title>
+</head>
+<body>
+  <h1>Søk etter Varta batteri</h1>
+  <form method="get" action="https://www.varta-automotive.com/nb-no/batterisok">
+    <input type="text" name="query" placeholder="Søk etter batteri..." required />
+    <button type="submit">Søk i Varta</button>
+  </form>
+</body>
+</html>
