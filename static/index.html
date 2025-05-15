@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<title>Elbatt Søkeside</title>
+</head>
+<body>
+
+<h1>Søk batteri på platenummer</h1>
+<input type="text" id="plateInput" placeholder="Skriv inn platenummer" />
+<button onclick="search()">Søk</button>
+
+<div id="results" style="margin-top:20px;"></div>
+
+<script>
+async function search() {
+    const plate = document.getElementById('plateInput').value.trim();
+    const resultsDiv = document.getElementById('results');
+    if (plate.length < 3) {
+        alert("Skriv inn minst 3 tegn i platenummeret");
+        return;
+    }
+    resultsDiv.textContent = "Laster...";
+
+    try {
+        const res = await fetch(`/api/search?plate=${encodeURIComponent(plate)}`);
+        const data = await res.json();
+        if (data.error) {
+            resultsDiv.textContent = "Feil: " + data.error;
+            return;
+        }
+        if (data.count === 0) {
+            resultsDiv.textContent = "Ingen produkter funnet.";
+            return;
+        }
+        resultsDiv.innerHTML = "";
+        data.products.forEach(p => {
+            const div = document.createElement('div');
+            div.innerHTML = `<b>${p.name}</b> - Pris: ${p.price} kr - <a href="${p.url}" target="_blank">Se produkt</a>`;
+            resultsDiv.appendChild(div);
+        });
+    } catch (err) {
+        resultsDiv.textContent = "En feil oppstod: " + err.message;
+    }
+}
+</script>
+
+</body>
+</html>
+

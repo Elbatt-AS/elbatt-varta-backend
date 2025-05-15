@@ -1,0 +1,69 @@
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from playwright.async_api import async_playwright
+import asyncio
+import requests
+import os
+from config import API_TOKEN
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Sett til ditt domene i produksjon
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def serve_index():
+    return FileResponse(os.path.join("static", "index.html"))
+
+async def varta_sok(platenummer: str) -> str:
+    """Bruk Playwright til å søke opp kortnummer/kode på Varta sin nettside"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto("https://www.varta-automotive.com/nb-no/batterisok")
+
+        # Velg kjøretøytype hvis nødvendig (Personbil)
+        # Forenklet eksempel - må tilpasses siden!
+        await page.click("text=Personbil")
+
+        # Fyll inn platenummer i søkefeltet
+        await page.fill('input[placeholder="Skriv inn ditt registreringsnummer"]', platenummer)
+        await page.click("text=Søk")
+
+        # Vent og hent ut kortnummer/kode - må tilpasses eksakt DOM-struktur!
+        try:
+            await page.wait_for_selector("selector_for_kortnummer", timeout=5000)
+            kortnummer = await page.text_content("selector_for_kortnummer")
+        except Exception:
+            kortnummer = None
+
+        await browser.close()
+        return kortnummer
+
+@app.get("/api/search")
+async def search_product(plate: str = Query(..., min_length=3)):
+    kortnummer = await varta_sok(plate)
+    if not kortnummer:
+        return {"error": "Fant ikke kortnummer for platenummer"}
+
+    # Søk i Elbatt API basert på kortnummer (varetekst)
+    url = f"https://api.elbatt.no/products?search={kortnummer}"
+    headers = {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Accept": "application/json"
+    }
+    resp = requests.get(url, headers=headers)
+    if resp.ok:
+        data = resp.json()
+        produkter = data.get("products", [])
+        return {"count": len(produkter), "kortnummer": kortnummer, "products": produkter}
+    else:
+        return {"error": f"API call failed: {resp.status_code}"}
+
