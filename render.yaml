@@ -1,0 +1,14 @@
+services:
+  - type: worker
+    name: elbatt-fullsync
+    runtime: python
+    repo: https://github.com/Elbatt-AS/elbatt-varta-backend
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python cron_runner.py
+    envVars:
+      - key: MYSTORE_API_KEY
+        sync: false
+      - key: GOOGLE_DRIVE_SETTINGS
+        sync: false
+
