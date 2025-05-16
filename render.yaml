@@ -10,6 +10,6 @@ services:
     startCommand: python cron_runner.py
     envVars:
       - key: MYSTORE_API_KEY
-        sync: false
+        value: "🟩 hele tokenet ditt her"
       - key: GOOGLE_DRIVE_SETTINGS
         sync: false
